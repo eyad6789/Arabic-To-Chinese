@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arabic → Chinese Translator</title>
+    <meta name="description" content="Real-time Arabic to Chinese speech translator">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600&family=Noto+Sans+SC:wght@400;600&family=Poppins:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* ═══════════════════════════════════════════════════════════════
+           CSS VARIABLES & RESET
+           ═══════════════════════════════════════════════════════════════ */
+        :root {
+            --bg-primary: #1A1A2E;
+            --bg-secondary: #16213E;
+            --bg-tertiary: #0F3460;
+            --accent-red: #E74C3C;
+            --accent-gold: #F39C12;
+            --text-white: #FFFFFF;
+            --text-gray: #B0B0B0;
+            --success: #2ECC71;
+            --error: #E74C3C;
+            --border-radius: 16px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-white);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .arabic-text {
+            font-family: 'Noto Sans Arabic', sans-serif;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .chinese-text {
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           LAYOUT
+           ═══════════════════════════════════════════════════════════════ */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           HEADER
+           ═══════════════════════════════════════════════════════════════ */
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .header h1 .emoji {
+            font-size: 1.8rem;
+        }
+
+        .lang-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .lang-badge.arabic {
+            background: linear-gradient(135deg, var(--accent-gold), #D68910);
+        }
+
+        .lang-badge.chinese {
+            background: linear-gradient(135deg, var(--accent-red), #C0392B);
+        }
+
+        .arrow {
+            color: var(--text-gray);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           CARDS
+           ═══════════════════════════════════════════════════════════════ */
+        .card {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .card-title {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           MICROPHONE SECTION
+           ═══════════════════════════════════════════════════════════════ */
+        .mic-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mic-select {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-white);
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23B0B0B0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+            padding-right: 44px;
+        }
+
+        .mic-select:focus {
+            outline: none;
+            border-color: var(--accent-red);
+        }
+
+        .mic-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-gray);
+        }
+
+        .status-dot.connected {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        .status-dot.error {
+            background: var(--error);
+            box-shadow: 0 0 10px var(--error);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           MAIN BUTTON
+           ═══════════════════════════════════════════════════════════════ */
+        .main-button-container {
+            display: flex;
+            justify-content: center;
+            margin: 24px 0;
+        }
+
+        .main-button {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--accent-red), #C0392B);
+            color: var(--text-white);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 8px 40px rgba(231, 76, 60, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 50px rgba(231, 76, 60, 0.5);
+        }
+
+        .main-button:active {
+            transform: scale(0.98);
+        }
+
+        .main-button .icon {
+            font-size: 3rem;
+        }
+
+        .main-button.active {
+            background: linear-gradient(135deg, #2ECC71, #27AE60);
+            box-shadow: 0 8px 40px rgba(46, 204, 113, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        .main-button.active:hover {
+            box-shadow: 0 12px 50px rgba(46, 204, 113, 0.5);
+        }
+
+        .main-button.speaking {
+            animation: pulse 1s infinite, glow 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.03);
+            }
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 8px 40px rgba(46, 204, 113, 0.4);
+            }
+
+            to {
+                box-shadow: 0 8px 60px rgba(46, 204, 113, 0.7);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           INTERIM TEXT (currently hearing)
+           ═══════════════════════════════════════════════════════════════ */
+        .interim-container {
+            min-height: 60px;
+            padding: 16px;
+            background: rgba(243, 156, 18, 0.1);
+            border: 2px dashed var(--accent-gold);
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .interim-label {
+            font-size: 0.75rem;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        #interim-text {
+            font-size: 1.2rem;
+            color: var(--text-white);
+            opacity: 0.7;
+            min-height: 1.5em;
+        }
+
+        /* Live translation (real-time) */
+        .live-translation-container {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed rgba(231, 76, 60, 0.3);
+        }
+
+        .live-translation-label {
+            font-size: 0.75rem;
+            color: var(--accent-red);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .live-translation-label .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-red);
+            border-radius: 50%;
+            animation: livePulse 1s infinite;
+        }
+
+        @keyframes livePulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+        }
+
+        #live-translation {
+            font-size: 1.3rem;
+            color: var(--accent-red);
+            min-height: 1.5em;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        #live-translation.translating {
+            opacity: 0.5;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           TRANSLATION LIST
+           ═══════════════════════════════════════════════════════════════ */
+        .translation-list-container {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #translation-list {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 300px;
+            padding-right: 8px;
+        }
+
+        #translation-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #translation-list::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+        }
+
+        #translation-list::-webkit-scrollbar-thumb {
+            background: var(--accent-red);
+            border-radius: 3px;
+        }
+
+        .translation-item {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid var(--accent-red);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .translation-item .arabic {
+            font-size: 1.1rem;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
+        }
+
+        .translation-item .divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 12px 0;
+        }
+
+        .translation-item .chinese {
+            font-size: 1.3rem;
+            color: var(--text-white);
+            margin-bottom: 8px;
+        }
+
+        .translation-item .timestamp {
+            font-size: 0.75rem;
+            color: var(--text-gray);
+            text-align: right;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-gray);
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           SETTINGS
+           ═══════════════════════════════════════════════════════════════ */
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+
+        .settings-label {
+            font-size: 0.95rem;
+            color: var(--text-white);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-white);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-primary);
+        }
+
+        .btn-secondary.active {
+            background: var(--accent-red);
+        }
+
+        .btn-toggle {
+            min-width: 60px;
+        }
+
+        .btn-toggle.on {
+            background: var(--success);
+        }
+
+        .btn-toggle.off {
+            background: var(--bg-tertiary);
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        .btn-danger:hover {
+            background: var(--error);
+            color: var(--text-white);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           STATUS BAR
+           ═══════════════════════════════════════════════════════════════ */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            margin-top: auto;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        #status-text {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .status-icon {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-gray);
+        }
+
+        .status-icon.listening {
+            background: var(--success);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        #counter {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+            background: var(--bg-tertiary);
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           ERROR MESSAGE
+           ═══════════════════════════════════════════════════════════════ */
+        #error-message {
+            display: none;
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            text-align: center;
+            font-size: 0.9rem;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           RESPONSIVE
+           ═══════════════════════════════════════════════════════════════ */
+        @media (max-width: 480px) {
+            .container {
+                padding: 16px;
+            }
+
+            .header h1 {
+                font-size: 1.2rem;
+                flex-wrap: wrap;
+            }
+
+            .main-button {
+                width: 160px;
+                height: 160px;
+                font-size: 1rem;
+            }
+
+            .main-button .icon {
+                font-size: 2.5rem;
+            }
+
+            .mic-section {
+                flex-direction: column;
+            }
+
+            .mic-select,
+            .mic-status {
+                width: 100%;
+            }
+
+            .settings-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .btn-group {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           LOADING SPINNER
+           ═══════════════════════════════════════════════════════════════ */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: var(--text-white);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinner.active {
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>
+                <span class="emoji">🌐</span>
+                <span class="lang-badge arabic">العربية</span>
+                <span class="arrow">→</span>
+                <span class="lang-badge chinese">中文</span>
+            </h1>
+        </header>
+
+        <!-- Error Message -->
+        <div id="error-message"></div>
+
+        <!-- Microphone Section -->
+        <div class="card">
+            <div class="card-title">🎤 Microphone</div>
+            <div class="mic-section">
+                <select id="mic-select" class="mic-select">
+                    <option value="">Loading devices...</option>
+                </select>
+                <div class="mic-status">
+                    <span class="status-dot" id="mic-status-dot"></span>
+                    <span id="mic-status-text">Ready</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Button -->
+        <div class="main-button-container">
+            <button id="main-button" class="main-button">
+                <span class="icon">🎤</span>
+                <span class="text">START</span>
+            </button>
+        </div>
+
+        <!-- Interim Text (currently hearing) -->
+        <div class="card">
+            <div class="interim-container">
+                <div class="interim-label">🔊 Hearing now...</div>
+                <div id="interim-text" class="arabic-text"></div>
+
+                <!-- Live Translation -->
+                <div class="live-translation-container">
+                    <div class="live-translation-label">
+                        <span class="live-dot"></span>
+                        <span>Live Translation</span>
+                    </div>
+                    <div id="live-translation" class="chinese-text"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Translation Display -->
+        <div class="card translation-list-container">
+            <div class="card-title">📝 Translations</div>
+            <div id="translation-list">
+                <div class="empty-state">
+                    <div class="icon">💬</div>
+                    <p>Translations will appear here</p>
+                    <p style="font-size: 0.85rem; margin-top: 8px;">Click START and speak Arabic</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="card">
+            <div class="card-title">⚙️ Settings</div>
+
+            <div class="settings-row">
+                <span class="settings-label">Speech Speed</span>
+                <div class="btn-group">
+                    <button class="btn btn-secondary speed-btn" data-speed="slow">Slow</button>
+                    <button class="btn btn-secondary speed-btn active" data-speed="normal">Normal</button>
+                    <button class="btn btn-secondary speed-btn" data-speed="fast">Fast</button>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Auto-Speak</span>
+                <button id="auto-speak-toggle" class="btn btn-toggle on">ON</button>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">History</span>
+                <button id="clear-history" class="btn btn-danger">Clear All</button>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div id="status-text">
+                <span class="status-icon" id="status-icon"></span>
+                <span id="status-label">Ready</span>
+                <span class="spinner" id="spinner"></span>
+            </div>
+            <div id="counter">Today: 0/1000</div>
+        </div>
+    </div>
+
+    <script>
+        /* ═══════════════════════════════════════════════════════════════
+           CONFIGURATION & STATE
+           ═══════════════════════════════════════════════════════════════ */
+        const CONFIG = {
+            speechRecognitionLang: 'ar-IQ',  // Iraqi Arabic
+            fallbackLang: 'ar',               // Standard Arabic
+            translationLang: 'zh-CN',         // Simplified Chinese
+            ttsLang: 'zh-CN',
+            maxDailyTranslations: 1000,
+            translationApiUrl: 'https://api.mymemory.translated.net/get'
+        };
+
+        const ERROR_MESSAGES = {
+            microphoneDenied: '🎤 Please allow microphone access in your browser settings',
+            browserNotSupported: '🌐 Please use Google Chrome or Microsoft Edge for this app',
+            translationFailed: '⚠️ Translation failed. Trying again...',
+            dailyLimitReached: '📊 Daily limit reached (1000 translations). Try again tomorrow!',
+            networkError: '🌐 No internet connection. Please check your network.',
+            deviceDisconnected: '🎧 Audio device disconnected. Please reconnect your AirPods.'
+        };
+
+        let state = {
+            isListening: false,
+            isSpeaking: false,
+            recognition: null,
+            audioContext: null,
+            wakeLock: null,
+            lastArabicText: '',
+            interimTranslateTimer: null,
+            lastInterimText: '',
+            isTranslatingInterim: false
+        };
+
+        /* ═══════════════════════════════════════════════════════════════
+           DOM ELEMENTS
+           ═══════════════════════════════════════════════════════════════ */
+        const elements = {
+            micSelect: document.getElementById('mic-select'),
+            micStatusDot: document.getElementById('mic-status-dot'),
+            micStatusText: document.getElementById('mic-status-text'),
+            mainButton: document.getElementById('main-button'),
+            interimText: document.getElementById('interim-text'),
+            liveTranslation: document.getElementById('live-translation'),
+            translationList: document.getElementById('translation-list'),
+            autoSpeakToggle: document.getElementById('auto-speak-toggle'),
+            clearHistory: document.getElementById('clear-history'),
+            statusIcon: document.getElementById('status-icon'),
+            statusLabel: document.getElementById('status-label'),
+            spinner: document.getElementById('spinner'),
+            counter: document.getElementById('counter'),
+            errorMessage: document.getElementById('error-message')
+        };
+
+        /* ═══════════════════════════════════════════════════════════════
+           INITIALIZATION
+           ═══════════════════════════════════════════════════════════════ */
+        async function init() {
+            // Check browser support
+            if (!checkBrowserSupport()) {
+                showError(ERROR_MESSAGES.browserNotSupported);
+                return;
+            }
+
+            // Initialize audio context
+            initAudioContext();
+
+            // Request microphone permission and populate dropdown
+            await requestMicrophonePermission();
+
+            // Initialize speech recognition
+            initSpeechRecognition();
+
+            // Initialize settings
+            initSettings();
+
+            // Update counter display
+            updateCounterDisplay();
+
+            // Setup event listeners
+            setupEventListeners();
+
+            // Listen for device changes
+            navigator.mediaDevices.addEventListener('devicechange', populateMicrophoneDropdown);
+
+            console.log('🚀 Arabic to Chinese Translator initialized');
+        }
+
+        function checkBrowserSupport() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            return !!SpeechRecognition && !!window.speechSynthesis;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           MICROPHONE SELECTION
+           ═══════════════════════════════════════════════════════════════ */
+        async function getAudioDevices() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            return devices.filter(device => device.kind === 'audioinput');
+        }
+
+        async function populateMicrophoneDropdown() {
+            const devices = await getAudioDevices();
+
+            elements.micSelect.innerHTML = '';
+
+            if (devices.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.text = 'No microphones found';
+                elements.micSelect.appendChild(option);
+                updateMicStatus('error', 'No mic');
+                return;
+            }
+
+            devices.forEach((device, index) => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                // Highlight AirPods or Bluetooth devices
+                let label = device.label || `Microphone ${index + 1}`;
+                if (label.toLowerCase().includes('airpods')) {
+                    label = '🎧 ' + label;
+                } else if (label.toLowerCase().includes('bluetooth')) {
+                    label = '📶 ' + label;
+                }
+                option.text = label;
+                elements.micSelect.appendChild(option);
+            });
+
+            // Restore saved selection
+            const savedDevice = localStorage.getItem('selectedMic');
+            if (savedDevice && devices.some(d => d.deviceId === savedDevice)) {
+                elements.micSelect.value = savedDevice;
+            }
+
+            updateMicStatus('connected', 'Connected');
+        }
+
+        async function requestMicrophonePermission() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // Stop the stream immediately, we just needed permission
+                stream.getTracks().forEach(track => track.stop());
+                await populateMicrophoneDropdown();
+                return true;
+            } catch (error) {
+                console.error('Microphone permission denied:', error);
+                showError(ERROR_MESSAGES.microphoneDenied);
+                updateMicStatus('error', 'Denied');
+                return false;
+            }
+        }
+
+        function updateMicStatus(status, text) {
+            elements.micStatusDot.className = 'status-dot ' + status;
+            elements.micStatusText.textContent = text;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           SPEECH RECOGNITION
+           ═══════════════════════════════════════════════════════════════ */
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            state.recognition = new SpeechRecognition();
+
+            // Configuration
+            state.recognition.lang = CONFIG.speechRecognitionLang;
+            state.recognition.continuous = true;
+            state.recognition.interimResults = true;
+            state.recognition.maxAlternatives = 1;
+
+            // Handle results
+            state.recognition.onresult = (event) => {
+                const result = event.results[event.results.length - 1];
+                const transcript = result[0].transcript.trim();
+                const isFinal = result.isFinal;
+
+                if (isFinal) {
+                    // Final result - send to translation and add to history
+                    state.lastArabicText = transcript;
+                    displayArabicText('', false);
+                    clearLiveTranslation();
+                    translateText(transcript, 0, true);  // true = final, add to history
+
+                    // Clear any pending interim translation
+                    if (state.interimTranslateTimer) {
+                        clearTimeout(state.interimTranslateTimer);
+                        state.interimTranslateTimer = null;
+                    }
+                } else {
+                    // Interim result - display and translate in real-time
+                    displayArabicText(transcript, false);
+
+                    // Debounced real-time translation (500ms delay)
+                    if (transcript !== state.lastInterimText && transcript.length > 2) {
+                        state.lastInterimText = transcript;
+
+                        // Clear previous timer
+                        if (state.interimTranslateTimer) {
+                            clearTimeout(state.interimTranslateTimer);
+                        }
+
+                        // Set new timer for debounced translation
+                        state.interimTranslateTimer = setTimeout(() => {
+                            translateInterim(transcript);
+                        }, 100);  // 100ms debounce - near-instant response
+                    }
+                }
+            };
+
+            // Auto-restart when it stops
+            state.recognition.onend = () => {
+                if (state.isListening) {
+                    try {
+                        state.recognition.start();
+                    } catch (e) {
+                        console.log('Recognition restart error:', e);
+                    }
+                }
+            };
+
+            // Handle errors
+            state.recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+
+                if (event.error === 'no-speech') {
+                    // No problem, just keep going
+                    return;
+                }
+
+                if (event.error === 'not-allowed') {
+                    showError(ERROR_MESSAGES.microphoneDenied);
+                    stopListening();
+                    return;
+                }
+
+                if (event.error === 'network') {
+                    showError(ERROR_MESSAGES.networkError);
+                }
+
+                // For other errors, try to restart
+                if (state.isListening) {
+                    setTimeout(() => {
+                        try {
+                            state.recognition.start();
+                        } catch (e) {
+                            console.log('Recognition restart error:', e);
+                        }
+                    }, 1000);
+                }
+            };
+        }
+
+        function startListening() {
+            state.isListening = true;
+            try {
+                state.recognition.start();
+            } catch (e) {
+                // Already started
+            }
+            updateUI('listening');
+            requestWakeLock();
+        }
+
+        function stopListening() {
+            state.isListening = false;
+            try {
+                state.recognition.stop();
+            } catch (e) {
+                // Already stopped
+            }
+            updateUI('idle');
+            releaseWakeLock();
+        }
+
+        function displayArabicText(text, isFinal) {
+            elements.interimText.textContent = text;
+            elements.interimText.style.opacity = isFinal ? '1' : '0.7';
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           TRANSLATION
+           ═══════════════════════════════════════════════════════════════ */
+
+        // Clear live translation display
+        function clearLiveTranslation() {
+            elements.liveTranslation.textContent = '';
+            elements.liveTranslation.classList.remove('translating');
+            state.lastInterimText = '';
+        }
+
+        // Translate interim results (real-time, shown in live area, not added to history)
+        async function translateInterim(arabicText) {
+            if (!arabicText.trim() || state.isTranslatingInterim) return;
+
+            state.isTranslatingInterim = true;
+            elements.liveTranslation.classList.add('translating');
+
+            try {
+                const url = `${CONFIG.translationApiUrl}?q=${encodeURIComponent(arabicText)}&langpair=ar|${CONFIG.translationLang}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.responseStatus === 200 && data.responseData.translatedText) {
+                    const chineseText = data.responseData.translatedText;
+                    elements.liveTranslation.textContent = chineseText;
+                    elements.liveTranslation.classList.remove('translating');
+                }
+            } catch (error) {
+                console.log('Interim translation error:', error);
+            } finally {
+                state.isTranslatingInterim = false;
+            }
+        }
+
+        // Translate final results (added to history and spoken aloud)
+        async function translateText(arabicText, retryCount = 0, isFinal = true) {
+            if (!arabicText.trim()) return;
+
+            // Check daily limit
+            const todayCount = getTodayTranslationCount();
+            if (todayCount >= CONFIG.maxDailyTranslations) {
+                showError(ERROR_MESSAGES.dailyLimitReached);
+                return;
+            }
+
+            showSpinner(true);
+            updateStatus('Translating...');
+
+            try {
+                const url = `${CONFIG.translationApiUrl}?q=${encodeURIComponent(arabicText)}&langpair=ar|${CONFIG.translationLang}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.responseStatus === 200 && data.responseData.translatedText) {
+                    const chineseText = data.responseData.translatedText;
+
+                    // Only add to history and speak for final results
+                    if (isFinal) {
+                        // Display translation in history
+                        displayChineseText(arabicText, chineseText);
+
+                        // Speak it
+                        if (getAutoSpeakSetting()) {
+                            speakChinese(chineseText);
+                        }
+
+                        // Update counter
+                        incrementTranslationCount();
+                    }
+
+                } else {
+                    throw new Error('Translation failed');
+                }
+
+            } catch (error) {
+                console.error('Translation error:', error);
+
+                if (retryCount < 2) {
+                    showError(ERROR_MESSAGES.translationFailed);
+                    setTimeout(() => translateText(arabicText, retryCount + 1, isFinal), 2000);
+                } else {
+                    showError('Translation failed after multiple attempts.');
+                }
+            } finally {
+                showSpinner(false);
+                if (state.isListening) {
+                    updateStatus('Listening...');
+                } else {
+                    updateStatus('Ready');
+                }
+            }
+        }
+
+        function displayChineseText(arabicText, chineseText) {
+            // Remove empty state if present
+            const emptyState = elements.translationList.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const item = document.createElement('div');
+            item.className = 'translation-item';
+            item.innerHTML = `
+                <div class="arabic arabic-text">${arabicText}</div>
+                <div class="divider"></div>
+                <div class="chinese chinese-text">${chineseText}</div>
+                <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+            `;
+
+            elements.translationList.insertBefore(item, elements.translationList.firstChild);
+
+            // Keep only last 50 items
+            while (elements.translationList.children.length > 50) {
+                elements.translationList.removeChild(elements.translationList.lastChild);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           TRANSLATION COUNTER
+           ═══════════════════════════════════════════════════════════════ */
+        function getTodayTranslationCount() {
+            const data = JSON.parse(localStorage.getItem('translationCount') || '{}');
+            const today = new Date().toDateString();
+
+            if (data.date !== today) {
+                return 0;
+            }
+            return data.count || 0;
+        }
+
+        function incrementTranslationCount() {
+            const today = new Date().toDateString();
+            const currentCount = getTodayTranslationCount();
+
+            localStorage.setItem('translationCount', JSON.stringify({
+                date: today,
+                count: currentCount + 1
+            }));
+
+            updateCounterDisplay();
+        }
+
+        function updateCounterDisplay() {
+            const count = getTodayTranslationCount();
+            elements.counter.textContent = `Today: ${count}/${CONFIG.maxDailyTranslations}`;
+
+            // Change color if near limit
+            if (count >= 900) {
+                elements.counter.style.color = 'var(--error)';
+            } else if (count >= 700) {
+                elements.counter.style.color = 'var(--accent-gold)';
+            } else {
+                elements.counter.style.color = 'var(--text-gray)';
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           TEXT-TO-SPEECH
+           ═══════════════════════════════════════════════════════════════ */
+        function speakChinese(text) {
+            // Cancel any ongoing speech
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+            }
+
+            const utterance = new SpeechSynthesisUtterance(text);
+
+            // Settings
+            utterance.lang = CONFIG.ttsLang;
+            utterance.rate = getSpeechRate();
+            utterance.pitch = 1;
+            utterance.volume = 1;
+
+            // Try to use a Chinese voice
+            const voices = speechSynthesis.getVoices();
+            const chineseVoice = voices.find(v =>
+                v.lang.includes('zh-CN') ||
+                v.lang.includes('zh_CN') ||
+                v.lang.includes('zh')
+            );
+
+            if (chineseVoice) {
+                utterance.voice = chineseVoice;
+            }
+
+            // Visual feedback
+            utterance.onstart = () => {
+                state.isSpeaking = true;
+                if (state.isListening) {
+                    updateUI('speaking');
+                }
+            };
+
+            utterance.onend = () => {
+                state.isSpeaking = false;
+                if (state.isListening) {
+                    updateUI('listening');
+                }
+            };
+
+            utterance.onerror = () => {
+                state.isSpeaking = false;
+                if (state.isListening) {
+                    updateUI('listening');
+                }
+            };
+
+            speechSynthesis.speak(utterance);
+        }
+
+        function getSpeechRate() {
+            const setting = localStorage.getItem('speechSpeed') || 'normal';
+            switch (setting) {
+                case 'slow': return 0.7;
+                case 'normal': return 0.9;
+                case 'fast': return 1.1;
+                default: return 0.9;
+            }
+        }
+
+        // Load voices (some browsers need this)
+        speechSynthesis.onvoiceschanged = () => {
+            console.log('Voices loaded:', speechSynthesis.getVoices().length);
+        };
+
+        /* ═══════════════════════════════════════════════════════════════
+           BACKGROUND TAB SUPPORT
+           ═══════════════════════════════════════════════════════════════ */
+        function initAudioContext() {
+            state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            // Resume on user interaction
+            document.addEventListener('click', () => {
+                if (state.audioContext && state.audioContext.state === 'suspended') {
+                    state.audioContext.resume();
+                }
+            }, { once: true });
+        }
+
+        // Monitor tab visibility
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('Tab hidden - continuing in background');
+            } else {
+                console.log('Tab visible');
+                // Resume audio context if needed
+                if (state.audioContext && state.audioContext.state === 'suspended') {
+                    state.audioContext.resume();
+                }
+                // Re-request wake lock
+                if (state.isListening && !state.wakeLock) {
+                    requestWakeLock();
+                }
+            }
+        });
+
+        /* ═══════════════════════════════════════════════════════════════
+           SCREEN WAKE LOCK (MOBILE)
+           ═══════════════════════════════════════════════════════════════ */
+        async function requestWakeLock() {
+            if (!('wakeLock' in navigator)) {
+                console.log('Wake Lock not supported');
+                return;
+            }
+
+            try {
+                state.wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Wake Lock active');
+
+                state.wakeLock.addEventListener('release', () => {
+                    console.log('Wake Lock released');
+                    state.wakeLock = null;
+                });
+
+            } catch (error) {
+                console.log('Wake Lock error:', error);
+            }
+        }
+
+        async function releaseWakeLock() {
+            if (state.wakeLock) {
+                try {
+                    await state.wakeLock.release();
+                    state.wakeLock = null;
+                } catch (e) {
+                    console.log('Wake lock release error:', e);
+                }
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           SETTINGS
+           ═══════════════════════════════════════════════════════════════ */
+        function getAutoSpeakSetting() {
+            return localStorage.getItem('autoSpeak') !== 'false';
+        }
+
+        function setAutoSpeakSetting(value) {
+            localStorage.setItem('autoSpeak', value.toString());
+        }
+
+        function initSettings() {
+            // Auto-speak toggle
+            const autoSpeak = getAutoSpeakSetting();
+            updateAutoSpeakButton(autoSpeak);
+
+            // Speed buttons
+            const currentSpeed = localStorage.getItem('speechSpeed') || 'normal';
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.speed === currentSpeed);
+            });
+        }
+
+        function updateAutoSpeakButton(isOn) {
+            elements.autoSpeakToggle.textContent = isOn ? 'ON' : 'OFF';
+            elements.autoSpeakToggle.classList.toggle('on', isOn);
+            elements.autoSpeakToggle.classList.toggle('off', !isOn);
+        }
+
+        function clearHistory() {
+            elements.translationList.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">💬</div>
+                    <p>Translations will appear here</p>
+                    <p style="font-size: 0.85rem; margin-top: 8px;">Click START and speak Arabic</p>
+                </div>
+            `;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           UI UPDATES
+           ═══════════════════════════════════════════════════════════════ */
+        function updateUI(uiState) {
+            const button = elements.mainButton;
+            const buttonIcon = button.querySelector('.icon');
+            const buttonText = button.querySelector('.text');
+
+            switch (uiState) {
+                case 'idle':
+                    buttonIcon.textContent = '🎤';
+                    buttonText.textContent = 'START';
+                    button.classList.remove('active', 'speaking');
+                    elements.statusIcon.classList.remove('listening');
+                    updateStatus('Ready');
+                    break;
+
+                case 'listening':
+                    buttonIcon.textContent = '⏹️';
+                    buttonText.textContent = 'STOP';
+                    button.classList.add('active');
+                    button.classList.remove('speaking');
+                    elements.statusIcon.classList.add('listening');
+                    updateStatus('Listening...');
+                    break;
+
+                case 'speaking':
+                    button.classList.add('speaking');
+                    updateStatus('Speaking...');
+                    break;
+            }
+        }
+
+        function updateStatus(text) {
+            elements.statusLabel.textContent = text;
+        }
+
+        function showSpinner(show) {
+            elements.spinner.classList.toggle('active', show);
+        }
+
+        function showError(message) {
+            elements.errorMessage.textContent = message;
+            elements.errorMessage.style.display = 'block';
+
+            setTimeout(() => {
+                elements.errorMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           EVENT LISTENERS
+           ═══════════════════════════════════════════════════════════════ */
+        function setupEventListeners() {
+            // Main button
+            elements.mainButton.addEventListener('click', () => {
+                if (state.isListening) {
+                    stopListening();
+                } else {
+                    startListening();
+                }
+            });
+
+            // Microphone selection
+            elements.micSelect.addEventListener('change', (e) => {
+                localStorage.setItem('selectedMic', e.target.value);
+            });
+
+            // Auto-speak toggle
+            elements.autoSpeakToggle.addEventListener('click', () => {
+                const newValue = !getAutoSpeakSetting();
+                setAutoSpeakSetting(newValue);
+                updateAutoSpeakButton(newValue);
+            });
+
+            // Speed buttons
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    localStorage.setItem('speechSpeed', btn.dataset.speed);
+                });
+            });
+
+            // Clear history
+            elements.clearHistory.addEventListener('click', () => {
+                clearHistory();
+            });
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           START APP
+           ═══════════════════════════════════════════════════════════════ */
+        // Wait for DOM and voices to load
+        window.addEventListener('load', () => {
+            // Give voices time to load
+            setTimeout(init, 100);
+        });
+    </script>
+</body>
+
+</html>
